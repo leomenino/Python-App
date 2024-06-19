@@ -1,7 +1,8 @@
 # Import Modules
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QLineEdit, QComboBox, QDateEdit, QTableWidget, QVBoxLayout, QHBoxLayout
-
+from PyQt5.QtCore import QDate
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QLineEdit, QComboBox, QDateEdit, QTableWidget, QVBoxLayout, QHBoxLayout, QMessageBox, QTableWidgetItem
+from PyQt5.QtSql import QSqlDatabase, QSqlQuery
+import sys
 # App Class
 
 class ExpenseApp(QWidget):
@@ -18,6 +19,8 @@ class ExpenseApp(QWidget):
 
         self.add_button = QPushButton("Add Expense")
         self.delete_button = QPushButton("Delete Expense")
+        self.add_button.clicked.connect(self.add_expense)
+        self.delete_button.clicked.connect(self.delete_expense)
 
         self.table = QTableWidget()
         self.table.setColumnCount(5) #Id,date,category,amount,description
@@ -28,6 +31,7 @@ class ExpenseApp(QWidget):
 
     #Design app with layouts
         
+        self.dropdown.addItems(["Food","Transportation","Rent","Shopping","Entertainment","Bills","Other"])
         
         self.master_layout = QVBoxLayout()
         self.row1 = QHBoxLayout()
@@ -55,7 +59,103 @@ class ExpenseApp(QWidget):
         self.master_layout.addWidget(self.table)
         
         
-        self.setLayout(self.master_layout) 
+        self.setLayout(self.master_layout)
+
+        self.load_table()
+
+
+    def load_table(self):
+        self.table.setRowCount(0)
+
+        query = QSqlQuery("SELECT * FROM expenses")
+        row = 0
+        while query.next():
+            expense_id = query.value(0)
+            date = query.value(1)
+            category = query.value(2)
+            amount = query.value(3)
+            description = query.value(4)
+
+            # Add values to table
+            self.table.insertRow(row)
+
+            self.table.setItem(row, 0, QTableWidgetItem(str(expense_id)))
+            self.table.setItem(row, 1, QTableWidgetItem(date))
+            self.table.setItem(row, 2, QTableWidgetItem(category))
+            self.table.setItem(row, 3, QTableWidgetItem(str(amount)))
+            self.table.setItem(row, 4, QTableWidgetItem(description))
+
+            row += 1
+
+    def add_expense(self):
+        date = self.date_box.date().toString("yyyy-MM-dd")
+        category = self.dropdown.currentText()
+        amount = self.amount.text()
+        description = self.description.text()
+
+        query = QSqlQuery()
+        query.prepare("""
+                      INSERT INTO expenses (date, category, amount, description)
+                      VALUES (?, ?, ?, ?)
+                        """)
+        query.addBindValue(date)
+        query.addBindValue(category)
+        query.addBindValue(amount)
+        query.addBindValue(description)
+        query.exec_()
+
+        self.date_box.setDate(QDate.currentDate())
+        self.dropdown.setCurrentIndex(0)
+        self.amount.clear()
+        self.description.clear()
+
+        self.load_table()
+
+
+    def delete_expense(self):
+        selected_row = self.table.currentRow()
+        if selected_row == -1:
+            QMessageBox.warning(self, "No Expense Chosen","Please choose an expense to delete!")
+            return
+        
+        expense_id = int(self.table.item(selected_row,0).text())
+
+        confirm = QMessageBox.question(self, "Are you sure?", "Delete Expense?", QMessageBox.Yes | QMessageBox.No)
+
+        if confirm == QMessageBox.No:
+            return
+        
+        query = QSqlQuery()
+        query.prepare("DELETE FROM expenses WHERE id = ?")
+        query.addBindValue(expense_id)
+        query.exec_()
+
+        self.load_table()
+
+
+
+
+
+# Create Database
+
+database = QSqlDatabase.addDatabase("QSQLITE")
+database.setDatabaseName("expense.db")
+if not database.open():
+    QMessageBox.critical(None, "Error","Could not open Database")
+    sys.exit(1)
+
+
+query = QSqlQuery()
+query.exec_("""
+            CREATE TABLE IF NOT EXISTS expenses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT,
+                category TEXT,
+                amount REAL,
+                description TEXT                
+            )
+            """)
+
 
 
 # Run the app
