@@ -30,7 +30,7 @@ class ExpenseApp(QWidget):
         self.table.sortByColumn(1, Qt.DescendingOrder)
 
 
-    # Create objects
+  
 
 
     #Design app with layouts
@@ -152,8 +152,7 @@ class ExpenseApp(QWidget):
         self.description.clear()
 
         self.load_table()
-
-
+ 
     def delete_expense(self):
         selected_row = self.table.currentRow()
         if selected_row == -1:
