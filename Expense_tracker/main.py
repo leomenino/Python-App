@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QTableWidgetItem,
     QHeaderView,
+    QAbstractSpinBox,
 )
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery
 
@@ -30,21 +31,29 @@ class ExpenseApp(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.resize(550, 500)
+        self.resize(720, 520)
+        self.setMinimumWidth(720)
         self.setWindowTitle("Controlo de Despesas")
 
         self.date_box = QDateEdit()
+        self.date_box.setDisplayFormat("dd/MM/yyyy")
         self.date_box.setDate(QDate.currentDate())
+        self.date_box.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        self.date_box_container = self._create_date_selector(self.date_box)
+
         self.dropdown = QComboBox()
         self.filter_dropdown = QComboBox()
         self.filter_start_date = QDateEdit()
         self.filter_end_date = QDateEdit()
         self.filter_start_date.setDate(QDate(2000, 1, 1))
         self.filter_end_date.setDate(QDate.currentDate())
+
         self.amount = QLineEdit()
         self.amount.setPlaceholderText("Ex: 45.90")
+        self.amount.setClearButtonEnabled(True)
         self.description = QLineEdit()
         self.description.setPlaceholderText("Ex: Mercado")
+        self.description.setClearButtonEnabled(True)
 
         self.add_button = QPushButton("Adicionar")
         self.clear_button = QPushButton("Limpar")
@@ -60,20 +69,16 @@ class ExpenseApp(QWidget):
         self.clear_filter_button.clicked.connect(self.reset_filters)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(5) #Id,date,category,amount,description
-        self.table.setHorizontalHeaderLabels(["Id","Data","Categoria","Montante","Descrição"])
+        self.table.setColumnCount(5)
+        self.table.setHorizontalHeaderLabels(["ID", "Data", "Categoria", "Montante", "Descrição"])
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(self.table.SelectRows)
         self.table.setEditTriggers(self.table.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
         self.table.sortByColumn(1, Qt.DescendingOrder)
 
-
-  
-
-
-    #Design app with layouts
-        
+        # Design app with layouts
         self.dropdown.addItems(["Alimentação","Transporte","Aluguer","Compras","Entretenimento","Contas","Outros"])
         self.filter_dropdown.addItem("Todas")
         self.filter_dropdown.addItems(["Alimentação","Transporte","Aluguer","Compras","Entretenimento","Contas","Outros"])
@@ -84,11 +89,14 @@ class ExpenseApp(QWidget):
         self.monthly_summary_label = QLabel("Resumo deste mês: € 0.00")
         self.monthly_summary_label.setAlignment(Qt.AlignRight)
 
+        self.total_label.setStyleSheet("font-size: 15px; font-weight: 700;")
+        self.monthly_summary_label.setStyleSheet("font-size: 15px; font-weight: 700;")
+
         self.setStyleSheet("""
                             QWidget{
                                 background-color: #edf3ff;
                                 color: #1f2a37;
-                                font-family: 'Segoe UI';
+                                font-family: 'Arial', sans-serif;
                             }
 
                             QLabel{
@@ -103,10 +111,27 @@ class ExpenseApp(QWidget):
                                 border: 1px solid #b7c7e6;
                                 border-radius: 6px;
                                 padding: 8px 10px;
+                                min-height: 32px;
                             }
 
                             QLineEdit:focus, QComboBox:focus, QDateEdit:focus{
                                 border: 2px solid #5b8def;
+                            }
+
+                            QPushButton#dateArrowButton {
+                                background-color: #eef4ff;
+                                color: #1f2a37;
+                                border: 1px solid #c9d7f3;
+                                border-radius: 5px;
+                                padding: 0;
+                                min-width: 24px;
+                                min-height: 24px;
+                                font-size: 10px;
+                                font-weight: 700;
+                            }
+
+                            QPushButton#dateArrowButton:hover {
+                                background-color: #dfeaff;
                             }
 
                            QTableWidget{
@@ -133,6 +158,14 @@ class ExpenseApp(QWidget):
                                 background-color: #3d6ae0;
                             }
 
+                           QPushButton#addButton {
+                                background-color: #1f9d63;
+                            }
+
+                           QPushButton#addButton:hover {
+                                background-color: #188653;
+                            }
+
                            QPushButton#clearButton {
                                 background-color: #f39c12;
                             }
@@ -154,13 +187,15 @@ class ExpenseApp(QWidget):
         self.row1 = QHBoxLayout()
         self.row2 = QHBoxLayout()
         self.row3 = QHBoxLayout()
+        self.row1.setSpacing(4)
+        self.row2.setSpacing(4)
 
-        self.row1.addWidget(QLabel("Data")) 
-        self.row1.addWidget(self.date_box)
+        self.row1.addWidget(QLabel("Data"))
+        self.row1.addWidget(self.date_box_container)
         self.row1.addWidget(QLabel("Categoria"))
         self.row1.addWidget(self.dropdown)
 
-        self.row2.addWidget(QLabel("Montante")) 
+        self.row2.addWidget(QLabel("Montante (€)"))
         self.row2.addWidget(self.amount)
         self.row2.addWidget(QLabel("Descrição"))
         self.row2.addWidget(self.description)
@@ -176,6 +211,7 @@ class ExpenseApp(QWidget):
         self.row3.addWidget(self.export_button)
 
         self.filter_row = QHBoxLayout()
+        self.filter_row.setSpacing(4)
         self.filter_row.addWidget(QLabel("Categoria:"))
         self.filter_row.addWidget(self.filter_dropdown)
         self.filter_row.addWidget(QLabel("De:"))
@@ -185,20 +221,55 @@ class ExpenseApp(QWidget):
         self.filter_row.addWidget(self.apply_filter_button)
         self.filter_row.addWidget(self.clear_filter_button)
 
-        self.master_layout.addLayout(self.row1) 
-        self.master_layout.addLayout(self.row2) 
+        self.master_layout.addLayout(self.row1)
+        self.master_layout.addLayout(self.row2)
         self.master_layout.addLayout(self.row3)
         self.master_layout.addLayout(self.filter_row)
         self.master_layout.addWidget(self.total_label)
         self.master_layout.addWidget(self.monthly_summary_label)
-
         self.master_layout.addWidget(self.table)
-        
-        
-        self.setLayout(self.master_layout)
 
+        self.setLayout(self.master_layout)
         self.load_table()
 
+    def _create_date_selector(self, date_edit):
+        up_button = QPushButton("▲")
+        down_button = QPushButton("▼")
+        for button in (up_button, down_button):
+            button.setObjectName("dateArrowButton")
+            button.setFixedWidth(24)
+
+        up_button.clicked.connect(lambda: date_edit.setDate(date_edit.date().addDays(1)))
+        down_button.clicked.connect(lambda: date_edit.setDate(date_edit.date().addDays(-1)))
+
+        container = QWidget()
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        layout.addWidget(date_edit)
+        layout.addWidget(up_button)
+        layout.addWidget(down_button)
+        return container
+
+    def _build_filtered_query(self, selected_filter=None):
+        if selected_filter is None:
+            selected_filter = self.filter_dropdown.currentText()
+
+        start_date = self.filter_start_date.date().toString("yyyy-MM-dd")
+        end_date = self.filter_end_date.date().toString("yyyy-MM-dd")
+        query = QSqlQuery()
+
+        if selected_filter == "Todas":
+            query.prepare("SELECT * FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC")
+            query.addBindValue(start_date)
+            query.addBindValue(end_date)
+        else:
+            query.prepare("SELECT * FROM expenses WHERE category = ? AND date BETWEEN ? AND ? ORDER BY date DESC")
+            query.addBindValue(selected_filter)
+            query.addBindValue(start_date)
+            query.addBindValue(end_date)
+
+        return query
 
     def reset_filters(self):
         self.filter_dropdown.setCurrentIndex(0)
@@ -209,20 +280,7 @@ class ExpenseApp(QWidget):
     def load_table(self, _index=None):
         self.table.setRowCount(0)
 
-        selected_filter = self.filter_dropdown.currentText()
-        start_date = self.filter_start_date.date().toString("yyyy-MM-dd")
-        end_date = self.filter_end_date.date().toString("yyyy-MM-dd")
-
-        query = QSqlQuery()
-        if selected_filter == "Todas":
-            query.prepare("SELECT * FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC")
-            query.addBindValue(start_date)
-            query.addBindValue(end_date)
-        else:
-            query.prepare("SELECT * FROM expenses WHERE category = ? AND date BETWEEN ? AND ? ORDER BY date DESC")
-            query.addBindValue(selected_filter)
-            query.addBindValue(start_date)
-            query.addBindValue(end_date)
+        query = self._build_filtered_query()
         query.exec_()
 
         row = 0
@@ -257,23 +315,8 @@ class ExpenseApp(QWidget):
     def export_csv(self):
         SAVED_DIR.mkdir(parents=True, exist_ok=True)
         output_path = SAVED_DIR / "expenses_export.csv"
-        selected_filter = self.filter_dropdown.currentText()
-        start_date = self.filter_start_date.date().toString("yyyy-MM-dd")
-        end_date = self.filter_end_date.date().toString("yyyy-MM-dd")
-
-        if selected_filter == "Todas":
-            query = QSqlQuery()
-            query.prepare("SELECT * FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC")
-            query.addBindValue(start_date)
-            query.addBindValue(end_date)
-            query.exec_()
-        else:
-            query = QSqlQuery()
-            query.prepare("SELECT * FROM expenses WHERE category = ? AND date BETWEEN ? AND ? ORDER BY date DESC")
-            query.addBindValue(selected_filter)
-            query.addBindValue(start_date)
-            query.addBindValue(end_date)
-            query.exec_()
+        query = self._build_filtered_query()
+        query.exec_()
 
         with output_path.open("w", newline="", encoding="utf-8") as csv_file:
             writer = csv.writer(csv_file)
@@ -367,24 +410,28 @@ class ExpenseApp(QWidget):
         self.load_table()
 
 
-# Create Database
+def initialize_database():
+    database = QSqlDatabase.addDatabase("QSQLITE")
+    database.setDatabaseName(str(BASE_DIR / "expense.db"))
+    if not database.open():
+        QMessageBox.critical(None, "Erro", "Não foi possível abrir o banco de dados.")
+        sys.exit(1)
 
-database = QSqlDatabase.addDatabase("QSQLITE")
-database.setDatabaseName(str(BASE_DIR / "expense.db"))
-if not database.open():
-    QMessageBox.critical(None, "Erro", "Não foi possível abrir o banco de dados.")
-    sys.exit(1)
+    query = QSqlQuery()
+    query.exec_("""
+        CREATE TABLE IF NOT EXISTS expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            category TEXT NOT NULL,
+            amount REAL NOT NULL,
+            description TEXT
+        )
+    """)
 
-query = QSqlQuery()
-query.exec_("""
-            CREATE TABLE IF NOT EXISTS expenses (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT,
-                category TEXT,
-                amount REAL,
-                description TEXT
-            )
-            """)
+    return database
+
+
+initialize_database()
 
 
 # Run the app
