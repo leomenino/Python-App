@@ -1,6 +1,6 @@
 # Calculator App
 
-Calculadora com interface gráfica construída em Python usando PyQt5, com botões numéricos, operações básicas e um design personalizado.
+Calculadora com interface gráfica construída em Python usando PyQt5, com botões numéricos, operações básicas, suporte a teclado físico e um parser seguro de expressões.
 
 ## 🖼️ Funcionalidades
 
@@ -8,12 +8,19 @@ Calculadora com interface gráfica construída em Python usando PyQt5, com botõ
 - Botão **Clear** para limpar o campo de entrada
 - Botão **<** para apagar o último carácter introduzido
 - Cálculo do resultado ao pressionar **=**
+- **Suporte a teclado físico**: números, operadores, `Enter` (calcular), `Backspace` (apagar) e `Esc` (limpar)
+- **Erros visíveis na interface** (ex: `Erro: Divisão por zero`), em vez de só no terminal
 - Estilo personalizado (fundo escuro, fonte Comic Sans nos botões)
+
+## 🔒 Segurança
+
+O cálculo das expressões não usa `eval()`. Em vez disso, usa um parser próprio (`safe_eval`) baseado no módulo `ast` do Python, que só permite números e os operadores `+ - * /`. Isto evita que a aplicação execute código arbitrário através do campo de texto.
 
 ## 🛠️ Tecnologias
 
 - Python 3
 - PyQt5
+- `ast` (parsing seguro de expressões)
 
 ## 📦 Instalação
 
@@ -29,17 +36,14 @@ pip install PyQt5
 python3 calculator.py
 ```
 
-*(substitui `calculator.py` pelo nome real do ficheiro principal)*
-
 ## 💡 Como funciona
 
-Cada botão está ligado à função `button_click`, que:
-- Adiciona o carácter clicado ao campo de texto
-- Avalia a expressão matemática com `eval()` quando se pressiona `=`
-- Limpa ou apaga carácteres consoante o botão **Clear** ou **<**
+- Cada botão (e cada tecla do teclado) chama `process_input()`, que atualiza o campo de texto
+- Ao pressionar `=` ou `Enter`, a expressão é validada e calculada por `safe_eval()`
+- Erros de sintaxe, divisão por zero ou operações não permitidas são apanhados e mostrados diretamente na interface
 
 ## 📌 Possíveis melhorias futuras
 
-- Substituir `eval()` por um parser mais seguro (evitar riscos de segurança com input do utilizador)
-- Adicionar suporte para teclado físico
-- Tratamento de erros mais visível na interface (em vez de só no terminal)
+- Suporte a mais operações (percentagem, raiz quadrada, potências)
+- Histórico de cálculos anteriores
+- Testes automatizados para `safe_eval()`
