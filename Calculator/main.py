@@ -89,6 +89,6 @@ class CalcApp(QWidget):
 if __name__ in "__main__":
     app = QApplication([])
     main_window = CalcApp()
-    main_window.setStyleSheet("QWidget { background-color: #f0f0f8}")
+    main_window.setStyleSheet("QWidget { background-color: #333333}")
     main_window.show()
     app.exec_()
